@@ -1,4 +1,4 @@
-name: build-pyside6
+name: _
 
 on:
   workflow_call:
@@ -7,54 +7,93 @@ on:
         type: boolean
         default: false
         required: false 
-
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      attestations: write
-      contents: write
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
+          - os: windows-latest
+            qthost: windows
+            qtarch: win32_msvc2019
+            version: 5.15.2
+            pythonversion: 3.7.9
+            arch: x86
+            binding: PyQt5
+          - os: windows-latest
+            qthost: windows
+            qtarch: win64_msvc2019_64
+            version: 5.15.2
+            pythonversion: 3.8.10
+            arch: x64
+            binding: PyQt5
+          - os: windows-latest
+            qthost: windows
+            qtarch: win64_msvc2019_64
+            version: 6.4.3
+            pythonversion: 3.8.10
+            arch: x64
+            binding: PyQt6
+          - os: windows-latest
+            qthost: windows
+            qtarch: win64_msvc2019_64
+            version: 6.6.2
+            pythonversion: 3.8.10
+            arch: x64
+            binding: PySide6
+          - os: ubuntu-latest
+            qthost: linux
+            qtarch: gcc_64
+            version: 5.15.2
+            pythonversion: 3.8.12
+            arch: x64
+            binding: PyQt5
+          - os: ubuntu-latest
+            qthost: linux
+            qtarch: gcc_64
+            version: 6.4.3
+            pythonversion: 3.8.12
+            arch: x64
+            binding: PyQt6
           - os: ubuntu-latest
             qthost: linux
             qtarch: gcc_64
             version: 6.10.0
-            pythonversion: 3.10.5
+            pythonversion: 3.8.12
             arch: x64
             binding: PySide6
-
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-
       - uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.qtarch }}
-          host: ${{ matrix.qthost }}
+          version: ${{matrix.version}}
+          arch: ${{matrix.qtarch}}
+          host: ${{matrix.qthost}}
           target: desktop
       
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.pythonversion }}
+          python-version: ${{matrix.pythonversion}}
           architecture: ${{ matrix.arch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.10
+          architecture: x64
       
       - uses: seanmiddleditch/gha-setup-vsdevenv@master
         with:
           arch: ${{ matrix.arch }}
-      
-      - run: python scripts/dobuild.py ${{ matrix.pythonversion }} ${{ matrix.qtarch }} ${{ matrix.version }} ${{ matrix.arch }} ${{ matrix.binding }}
-      
+      - run: python scripts/dobuild.py ${{matrix.pythonversion}} ${{ matrix.qtarch }}  ${{ matrix.version }} ${{ matrix.arch }}  ${{matrix.binding}}
       - uses: actions/attest-build-provenance@v2.2.0
         with:
-          subject-path: scripts/objects
-      
+            subject-path: scripts/objects
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.qthost }}_${{ matrix.binding }}_${{ matrix.arch }}
+          name: ${{matrix.qthost}}_${{ matrix.binding }}_${{ matrix.arch }}
           path: scripts/objects
